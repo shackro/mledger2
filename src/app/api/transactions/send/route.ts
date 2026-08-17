@@ -92,7 +92,8 @@ export async function POST(request: NextRequest) {
       return transaction
     })
 
-    return NextResponse.json({ success: true, data: result })
+    const { serializePrisma } = await import('@/lib/serializers')
+    return NextResponse.json({ success: true, data: serializePrisma(result) })
   } catch (error) {
     console.error('Send money error:', error)
     return NextResponse.json(

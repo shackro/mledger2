@@ -15,5 +15,6 @@ export async function GET(request: NextRequest) {
     take: 50,
   })
 
-  return NextResponse.json({ success: true, data: transactions })
+  const { serializePrisma } = await import('@/lib/serializers')
+  return NextResponse.json({ success: true, data: serializePrisma(transactions) })
 }

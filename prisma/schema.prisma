@@ -71,7 +71,8 @@ model Account {
   balance       Decimal        @default(0) @db.Decimal(10, 2)
   currency      String         @default("KES")
   status        AccountStatus  @default(ACTIVE)
-  dailyLimit    Decimal        @default(70000) @db.Decimal(10, 2)
+  dailyLimit    Decimal        @default(500000) @db.Decimal(12, 2)
+  weeklyLimit   Decimal        @default(3000000) @db.Decimal(12, 2)
   monthlyLimit  Decimal        @default(150000) @db.Decimal(10, 2)
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt

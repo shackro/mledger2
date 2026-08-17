@@ -10,5 +10,6 @@ export async function GET(request: NextRequest) {
   if (!decoded) return NextResponse.json({ success: false, error: 'Invalid token' }, { status: 401 })
 
   const mshwari = await prisma.mshwari.findUnique({ where: { userId: (decoded as any).userId } })
-  return NextResponse.json({ success: true, data: mshwari })
+  const { serializePrisma } = await import('@/lib/serializers')
+  return NextResponse.json({ success: true, data: serializePrisma(mshwari) })
 }

@@ -40,7 +40,8 @@ export async function POST(request: NextRequest) {
       return t
     })
 
-    return NextResponse.json({ success: true, data: transaction })
+    const { serializePrisma } = await import('@/lib/serializers')
+    return NextResponse.json({ success: true, data: serializePrisma(transaction) })
   } catch (error) {
     console.error('Withdraw error:', error)
     return NextResponse.json({ success: false, error: 'Server error' }, { status: 500 })

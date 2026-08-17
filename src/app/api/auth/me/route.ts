@@ -13,5 +13,7 @@ export async function GET(request: NextRequest) {
   if (!user) return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 })
 
   const { pinHash, ...userWithoutPin } = user as any
-  return NextResponse.json({ success: true, data: userWithoutPin })
+
+  const { serializePrisma } = await import('@/lib/serializers')
+  return NextResponse.json({ success: true, data: serializePrisma(userWithoutPin) })
 }

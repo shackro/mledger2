@@ -7,9 +7,17 @@ export const loginSchema = z.object({
 
 export const registerSchema = z.object({
   name: z.string().min(3),
-  phone: z.string().min(10).max(13),
-  pin: z.string().length(4),
-  nationalId: z.string().min(7),
+  phone: z.preprocess((val) => (typeof val === 'number' ? String(val) : val), z.string().min(10).max(13)),
+  pin: z.preprocess((val) => (typeof val === 'number' ? String(val).padStart(4, '0') : val), z.string().length(4)),
+  nationalId: z.preprocess((val) => (typeof val === 'number' ? String(val) : val), z.string().min(7)),
+  startingAmount: z.preprocess((val) => {
+    if (typeof val === 'string' && val.trim() !== '') return Number(val)
+    return val
+  }, z.number().min(0).optional()),
+  fulizaLimit: z.preprocess((val) => {
+    if (typeof val === 'string' && val.trim() !== '') return Number(val)
+    return val
+  }, z.number().min(0).optional()),
 })
 
 export const sendMoneySchema = z.object({

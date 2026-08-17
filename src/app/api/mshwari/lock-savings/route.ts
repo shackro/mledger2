@@ -23,7 +23,8 @@ export async function POST(request: NextRequest) {
       return t.mshwari.update({ where: { userId }, data: { savingsBalance: { increment: amount } } })
     })
 
-    return NextResponse.json({ success: true, data: result })
+    const { serializePrisma } = await import('@/lib/serializers')
+    return NextResponse.json({ success: true, data: serializePrisma(result) })
   } catch (error) {
     console.error('Lock savings error:', error)
     return NextResponse.json({ success: false, error: 'Server error' }, { status: 500 })
