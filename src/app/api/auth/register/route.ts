@@ -7,12 +7,11 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     
-    // Validate incoming data
+    // 1. Validate incoming data
     const validation = registerSchema.safeParse(body)
     
     if (!validation.success) {
       return NextResponse.json(
-        // 👇 Changed .errors to .issues (Zod's correct property name)
         { success: false, error: 'Invalid input', details: validation.error.issues },
         { status: 400 }
       )
@@ -20,16 +19,16 @@ export async function POST(request: NextRequest) {
 
     const { name, phone, pin, nationalId, startingAmount, fulizaLimit } = validation.data
 
-    // Check if user already exists
+    // 2. Check if user already exists
     const existingUser = await prisma.user.findUnique({ where: { phone } })
     if (existingUser) {
       return NextResponse.json({ success: false, error: 'User already exists' }, { status: 409 })
     }
 
-    // Hash the PIN
+    // 3. Hash the PIN
     const pinHash = await hashPin(pin)
 
-    // Create User, Account, and Fuliza in a single ACID transaction
+    // 4. Create User, Account, and Fuliza in a single ACID transaction
     const newUser = await prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
@@ -41,26 +40,23 @@ export async function POST(request: NextRequest) {
           isVerified: true,
           isActive: true,
           
-          // Initialize Account with starting amount
           account: {
             create: {
               accountNumber: `ACC${Date.now()}`,
-              balance: startingAmount ?? 0.0, 
+              balance: startingAmount, // Zod guarantees this is a valid number (defaults to 0)
               currency: 'KES',
               status: 'ACTIVE',
             }
           },
           
-          // Initialize Fuliza with limit
           fuliza: {
             create: {
-              creditLimit: fulizaLimit ?? 0.0, 
+              creditLimit: fulizaLimit ?? 0.0, // 👈 Nullish coalescing: keeps 0 as 0, doesn't fallback to 1500
               usedAmount: 0.0,
               isActive: true,
             }
           },
           
-          // Initialize Loyalty
           loyalty: {
             create: {
               points: 0,
@@ -68,19 +64,19 @@ export async function POST(request: NextRequest) {
             }
           }
         },
-        include: {
-          account: true,
-          fuliza: true,
+        include: { 
+          account: true, 
+          fuliza: true 
         }
       })
 
       return user
-    })
+    }) // 👈 This correctly closes the prisma.$transaction block
 
-    // Generate JWT Token
+    // 5. Generate JWT Token
     const token = generateToken(newUser.id, newUser.phone)
     
-    // Remove pinHash from response for security
+    // 6. Remove pinHash from response for security
     const { pinHash: _, ...userWithoutPin } = newUser
 
     return NextResponse.json({
