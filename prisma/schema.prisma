@@ -42,7 +42,6 @@ enum TransactionStatus {
 
 model User {
   id          String    @id @default(uuid())
-  transactionCode String   @unique                   // 👈 The 10-char M-PESA code (shown everywhere)
   phone       String    @unique
   name        String
   email       String?
@@ -124,7 +123,7 @@ model Loyalty {
 
 model Transaction {
   id              String            @id @default(uuid())
-  transactionCode String            @unique
+  transactionCode String            @unique // 👈 THIS IS THE CORRECT PLACE FOR IT
   type            TransactionType
   amount          Decimal           @db.Decimal(10, 2)
   fee             Decimal           @default(0) @db.Decimal(10, 2)
