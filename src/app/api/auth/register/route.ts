@@ -30,48 +30,46 @@ export async function POST(request: NextRequest) {
     const pinHash = await hashPin(pin)
 
     // Create User, Account, and Fuliza in a single ACID transaction
-    const newUser = await prisma.$transaction(async (tx) => {
-      const user = await tx.user.create({
-        data: {
-          name: name,
-          phone: phone,
-          nationalId: nationalId,
-          pinHash: pinHash,
-          role: 'USER',
-          isVerified: true,
-          isActive: true,
-          
-          // 👇 THIS IS WHERE THE STARTING BALANCE IS INITIALIZED
-          account: {
-            create: {
-              accountNumber: `ACC${Date.now()}`,
-              balance: startingAmount || 0.0, 
-              currency: 'KES',
-              status: 'ACTIVE',
-            }
-          },
-          
-          // 👇 THIS IS WHERE THE FULIZA LIMIT IS INITIALIZED
-          fuliza: {
-            create: {
-              creditLimit: fulizaLimit || 1500.0,
-              usedAmount: 0.0,
-              isActive: true,
-            }
-          },
-          
-          loyalty: {
-            create: {
-              points: 0,
-              tier: 'BRONZE',
-            }
+    // Inside the prisma.$transaction block of your register route
+    const user = await tx.user.create({
+      data: {
+        name: name,
+        phone: phone,
+        nationalId: nationalId,
+        pinHash: pinHash,
+        role: 'USER',
+        isVerified: true,
+        isActive: true,
+        
+        account: {
+          create: {
+            accountNumber: `ACC${Date.now()}`,
+            balance: startingAmount ?? 0.0, // 👈 Respects 0, defaults to 0.0
+            currency: 'KES',
+            status: 'ACTIVE',
           }
         },
-        include: {
-          account: true,
-          fuliza: true,
+        
+        fuliza: {
+          create: {
+            creditLimit: fulizaLimit ?? 0.0, // 👈 Respects 0, defaults to 0.0 (NOT 1500)
+            usedAmount: 0.0,
+            isActive: true,
+          }
+        },
+        
+        loyalty: {
+          create: {
+            points: 0,
+            tier: 'BRONZE',
+          }
         }
-      })
+      },
+      include: { 
+        account: true, 
+        fuliza: true 
+      }
+    })
 
       return user
     })
