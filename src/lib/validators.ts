@@ -6,27 +6,24 @@ export const loginSchema = z.object({
 })
 
 export const registerSchema = z.object({
-  name: z.string().min(3),
-  phone: z.preprocess((val) => (typeof val === 'number' ? String(val) : val), z.string().min(10).max(13)),
-  pin: z.preprocess((val) => (typeof val === 'number' ? String(val).padStart(4, '0') : val), z.string().length(4)),
-  nationalId: z.preprocess((val) => (typeof val === 'number' ? String(val) : val), z.string().min(7)),
-  startingAmount: z.preprocess((val) => {
-    if (typeof val === 'string' && val.trim() !== '') return Number(val)
-    return val
-  }, z.number().min(0).optional()),
-  fulizaLimit: z.preprocess((val) => {
-    if (typeof val === 'string' && val.trim() !== '') return Number(val)
-    return val
-  }, z.number().min(0).optional()),
+  name: z.string().min(3, "Name must be at least 3 characters"),
+  phone: z.string().min(10).max(13, "Invalid phone number"),
+  pin: z.string().length(4, "PIN must be exactly 4 digits"),
+  nationalId: z.string().min(7, "Invalid National ID"),
+  
+  // 👇 z.coerce automatically converts strings like "500" to numbers.
+  // 👇 .default(0) ensures that if it's missing or invalid, it safely becomes 0 (NOT 1500).
+  startingAmount: z.coerce.number().min(0, "Amount cannot be negative").default(0),
+  fulizaLimit: z.coerce.number().min(0, "Limit cannot be negative").default(0),
 })
 
 export const sendMoneySchema = z.object({
   recipientPhone: z.string().min(10),
-  amount: z.number().positive(),
+  amount: z.coerce.number().positive("Amount must be greater than 0"),
   pin: z.string().length(4),
 })
 
 export const transactionSchema = z.object({
-  amount: z.number().positive(),
+  amount: z.coerce.number().positive("Amount must be greater than 0"),
   pin: z.string().length(4),
 })
