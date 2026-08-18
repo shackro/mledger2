@@ -42,6 +42,7 @@ enum TransactionStatus {
 
 model User {
   id          String    @id @default(uuid())
+  transactionCode String   @unique                   // 👈 The 10-char M-PESA code (shown everywhere)
   phone       String    @unique
   name        String
   email       String?
