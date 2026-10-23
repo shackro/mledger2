@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { verifyToken } from '@/lib/auth'
+import { verifyToken, verifyPin } from '@/lib/auth'
 import { sendMoneySchema } from '@/lib/validators'
+import { generateMpesaCode } from '@/lib/utils'
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,9 +25,9 @@ export async function POST(request: NextRequest) {
 
     const { recipientPhone, amount, pin } = validation.data
 
-    // Start transaction
+    // Start ACID transaction
     const result = await prisma.$transaction(async (tx) => {
-      // Get sender
+      // 1. Get sender
       const sender = await tx.user.findUnique({
         where: { id: (decoded as any).userId },
         include: { account: true },
@@ -36,20 +37,18 @@ export async function POST(request: NextRequest) {
         throw new Error('Sender account not found')
       }
 
-      // Verify PIN
-      const { verifyPin } = await import('@/lib/auth')
+      // 2. Verify PIN
       const isValidPin = await verifyPin(pin, sender.pinHash)
       if (!isValidPin) {
         throw new Error('Invalid PIN')
       }
 
-      // Check balance
-      // sender.account.balance is Decimal (Prisma.Decimal)
+      // 3. Check balance
       if ((sender.account.balance as any).toNumber() < amount) {
         throw new Error('Insufficient funds')
       }
 
-      // Get recipient
+      // 4. Get recipient
       const recipient = await tx.user.findUnique({
         where: { phone: recipientPhone },
         include: { account: true },
@@ -59,10 +58,10 @@ export async function POST(request: NextRequest) {
         throw new Error('Recipient not found')
       }
 
-     // CURRENT (WRONG): Generates TXN1787060364934RVOSBVL0H
-      const transactionCode = `TXN${Date.now()}${Math.random().toString(36).substr(2, 9).toUpperCase()}`
+      // 5. 👇 GENERATE REALISTIC 10-CHAR M-PESA CODE (e.g., UHHXTXDE4M)
+      const transactionCode = generateMpesaCode()
 
-      // Create transaction
+      // 6. Create transaction record
       const transaction = await tx.transaction.create({
         data: {
           transactionCode,
@@ -78,7 +77,7 @@ export async function POST(request: NextRequest) {
         },
       })
 
-      // Update balances
+      // 7. Update balances atomically
       await tx.account.update({
         where: { userId: sender.id },
         data: { balance: { decrement: amount } },
@@ -94,6 +93,7 @@ export async function POST(request: NextRequest) {
 
     const { serializePrisma } = await import('@/lib/serializers')
     return NextResponse.json({ success: true, data: serializePrisma(result) })
+    
   } catch (error) {
     console.error('Send money error:', error)
     return NextResponse.json(
