@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
         throw new Error('Recipient not found')
       }
 
-      // Generate transaction code
+     // CURRENT (WRONG): Generates TXN1787060364934RVOSBVL0H
       const transactionCode = `TXN${Date.now()}${Math.random().toString(36).substr(2, 9).toUpperCase()}`
 
       // Create transaction
